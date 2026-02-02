@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bashar vs Zannat - Ultimate Sound Version</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
+        
+        body { 
+            margin: 0; font-family: 'Hind Siliguri', sans-serif; 
+            background: #000; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; 
+        }
+
+        #game-view {
+            width: 100vw; height: 450px; max-width: 850px;
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+            position: relative; border-radius: 20px; overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        #hud { 
+            position: absolute; top: 15px; width: 100%; padding: 0 25px; 
+            display: flex; justify-content: space-between; z-index: 50; box-sizing: border-box; 
+        }
+        .stat { 
+            background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px; 
+            font-size: 18px; color: white; border: 1px solid rgba(255,255,255,0.2); 
+            backdrop-filter: blur(5px);
+        }
+
+        #ground { 
+            position: absolute; bottom: 0; width: 100%; height: 50px; 
+            background: #1b8d49; border-top: 5px solid #2ecc71; z-index: 10; 
+        }
+
+        .actor { position: absolute; bottom: 50px; transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20; }
+        .tag { 
+            font-size: 11px; background: #fff; color: #000; padding: 2px 6px; 
+            border-radius: 4px; display: block; text-align: center; font-weight: bold; margin-bottom: 3px; 
+        }
+        
+        .char-emoji { 
+            font-size: 50px; width: 60px; height: 70px;
+            display: flex; justify-content: center; align-items: center;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        }
+
+        .obj { position: absolute; font-size: 30px; z-index: 15; }
+
+        #overlay { 
+            display: none; position: absolute; inset: 0; 
+            background: rgba(0, 0, 0, 0.3); 
+            z-index: 1000; justify-content: center; align-items: center; 
+        }
+
+        #end-card { 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+            color: #fff; width: 85%; max-width: 340px; padding: 30px; border-radius: 30px; 
+            text-align: center; border: 1px solid rgba(255,255,255,0.3);
+            animation: popIn 0.5s ease-out;
+        }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        .dialogue-box {
+            background: rgba(255, 255, 255, 0.95); color: #d63031; padding: 15px; 
+            border-radius: 15px; font-weight: 700; margin: 15px 0; font-size: 18px;
+        }
+
+        .restart-btn {
+            background: #27ae60; color: white; border: none; padding: 12px 40px; 
+            border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer;
+        }
+
+        .kiss-rain { position: absolute; font-size: 40px; animation: kissFly 1.2s ease-out forwards; z-index: 1100; }
+        @keyframes kissFly { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: translateY(-140px) scale(2.8); opacity: 0; } }
+
+        .jumping { animation: jump-frame 0.75s ease-in-out; }
+        @keyframes jump-frame { 0%, 100% { bottom: 50px; } 50% { bottom: 240px; } }
+    </style>
+</head>
+<body>
+
+<audio id="bg-audio" loop><source src="bg-music.mp3" type="audio/mpeg"></audio>
+<audio id="kiss-audio"><source src="kiss-sound.mp3" type="audio/mpeg"></audio>
+<audio id="crash-custom-audio"><source src="kache-esho-na.mp3" type="audio/mpeg"></audio>
+
+<div id="game-view">
+    <div id="hud">
+        <div class="stat">🏆 Score: <span id="score">0</span></div>
+        <div class="stat" id="hearts">❤️❤️❤️</div>
+    </div>
+    <div id="ground"></div>
+
+    <div id="zannat" class="actor" style="left: 20px;">
+        <span class="tag">Zannat 😈</span>
+        <div class="char-emoji">🏃🏻‍♀️‍➡️</div>
+    </div>
+
+    <div id="bashar" class="actor" style="left: 130px;">
+        <span class="tag">Bashar 😩</span>
+        <div class="char-emoji">🏃🏻‍♂️‍➡️</div>
+    </div>
+
+    <div id="overlay">
+        <div id="end-card">
+            <h2>বাশার ধরা খেয়ে গেছে! 💘</h2>
+            <p>Zannat says:</p>
+            <div class="dialogue-box">"কই যাও বেবি? আসো তোমাকে উম্মা দেই! 😘🫦💖"</div>
+            <p>Score: <strong id="final-score">0</strong></p>
+            <button class="restart-btn" onclick="location.reload()">আবার দৌড়াও!</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const bashar = document.getElementById('bashar');
+    const zannat = document.getElementById('zannat');
+    const scoreEl = document.getElementById('score');
+    const heartEl = document.getElementById('hearts');
+    const view = document.getElementById('game-view');
+    const overlay = document.getElementById('overlay');
+    const bgAudio = document.getElementById('bg-audio');
+    const kissAudio = document.getElementById('kiss-audio');
+    const crashAudio = document.getElementById('crash-custom-audio');
+
+    let score = 0, life = 3, isActive = true, isJumping = false, speed = 5.5;
+
+    // Background music volume 20%
+    bgAudio.volume = 0.2;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playDefaultSound(freq, type, duration) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function startMusic() { if(bgAudio.paused) { bgAudio.currentTime = 0; bgAudio.play(); } }
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space') { startMusic(); startJump(); } });
+    view.addEventListener('touchstart', (e) => { e.preventDefault(); startMusic(); startJump(); });
+
+    function startJump() {
+        if (!isJumping && isActive) {
+            isJumping = true;
+            bashar.classList.add('jumping');
+            setTimeout(() => { if(isActive) zannat.classList.add('jumping'); }, 100); 
+            setTimeout(() => { bashar.classList.remove('jumping'); zannat.classList.remove('jumping'); isJumping = false; }, 750);
+        }
+    }
+
+    function createItem() {
+        if (!isActive) return;
+        const items = [{i:'🌵',t:'t'}, {i:'🪙',t:'p'}, {i:'🍎',t:'l'}];
+        let obj = items[Math.floor(Math.random() * items.length)];
+        const el = document.createElement('div');
+        el.className = 'obj'; el.innerHTML = obj.i;
+        el.style.bottom = (Math.floor(Math.random() * 170) + 55) + 'px';
+        el.style.right = '-60px';
+        view.appendChild(el);
+
+        let pos = -60, loop = setInterval(() => {
+            if (!isActive) { clearInterval(loop); el.remove(); return; }
+            pos += speed; el.style.right = pos + 'px';
+            let b = bashar.getBoundingClientRect(), i = el.getBoundingClientRect();
+            
+            if (b.left < i.right && b.right > i.left && b.top < i.bottom && b.bottom > i.top) {
+                if (obj.t === 't') {
+                    life--; 
+                    heartEl.innerText = "❤️".repeat(life);
+                    
+                    if (life > 0) {
+                        // Custom Crash Sound "kache-esho-na" for 1st and 2nd life loss
+                        crashAudio.currentTime = 0;
+                        crashAudio.play();
+                    } else {
+                        // Last life - handle game over with kiss sound
+                        handleGameOver();
+                    }
+                } else if (obj.t === 'p') {
+                    score += 50; scoreEl.innerText = score; speed += 0.15;
+                    playDefaultSound(800, 'sine', 0.1); // Coin sound
+                } else if (obj.t === 'l' && life < 3) {
+                    life++; heartEl.innerText = "❤️".repeat(life);
+                    playDefaultSound(1200, 'sine', 0.2); // Life sound
+                }
+                el.remove(); clearInterval(loop);
+            }
+            if (pos > window.innerWidth) { el.remove(); clearInterval(loop); }
+        }, 20);
+        setTimeout(createItem, 1800 + Math.random() * 1500);
+    }
+
+    function handleGameOver() {
+        isActive = false;
+        bgAudio.pause();
+        kissAudio.currentTime = 0;
+        kissAudio.play();
+        zannat.style.left = "120px"; 
+
+        setInterval(() => {
+            let kiss = document.createElement('div');
+            kiss.className = 'kiss-rain'; kiss.innerHTML = '😘';
+            kiss.style.left = (120 + Math.random()*50) + 'px';
+            kiss.style.bottom = (60 + Math.random()*60) + 'px';
+            view.appendChild(kiss);
+            setTimeout(() => kiss.remove(), 1200);
+        }, 150);
+
+        setTimeout(() => {
+            document.getElementById('final-score').innerText = score;
+            overlay.style.display = 'flex';
+        }, 1200);
+    }
+    setTimeout(createItem, 1000);
+</script>
+</body>
+</html>

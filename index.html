@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bashar vs Zannat - Ultimate Sound Version</title>
+    <title>Bashar vs Zannat - Balanced Version</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
         
@@ -47,16 +47,16 @@
             filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
         }
 
-        .obj { position: absolute; font-size: 30px; z-index: 15; }
+        .obj { position: absolute; font-size: 35px; z-index: 15; }
 
         #overlay { 
             display: none; position: absolute; inset: 0; 
-            background: rgba(0, 0, 0, 0.3); 
+            background: rgba(0, 0, 0, 0.4); 
             z-index: 1000; justify-content: center; align-items: center; 
         }
 
         #end-card { 
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
             color: #fff; width: 85%; max-width: 340px; padding: 30px; border-radius: 30px; 
             text-align: center; border: 1px solid rgba(255,255,255,0.3);
             animation: popIn 0.5s ease-out;
@@ -72,6 +72,7 @@
         .restart-btn {
             background: #27ae60; color: white; border: none; padding: 12px 40px; 
             border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
         .kiss-rain { position: absolute; font-size: 40px; animation: kissFly 1.2s ease-out forwards; z-index: 1100; }
@@ -107,10 +108,9 @@
     <div id="overlay">
         <div id="end-card">
             <h2>বাশার ধরা খেয়ে গেছে! 💘</h2>
-            <p>Zannat says:</p>
             <div class="dialogue-box">"কই যাও বেবি? আসো তোমাকে উম্মা দেই! 😘🫦💖"</div>
-            <p>Score: <strong id="final-score">0</strong></p>
-            <button class="restart-btn" onclick="location.reload()">আবার দৌড়াও!</button>
+            <p style="font-size: 20px;">Score: <strong id="final-score">0</strong></p>
+            <button class="restart-btn" id="btn-restart">আবার দৌড়াও!</button>
         </div>
     </div>
 </div>
@@ -125,10 +125,10 @@
     const bgAudio = document.getElementById('bg-audio');
     const kissAudio = document.getElementById('kiss-audio');
     const crashAudio = document.getElementById('crash-custom-audio');
+    const btnRestart = document.getElementById('btn-restart');
 
     let score = 0, life = 3, isActive = true, isJumping = false, speed = 5.5;
 
-    // Background music volume 20%
     bgAudio.volume = 0.2;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -142,9 +142,14 @@
         osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
 
-    function startMusic() { if(bgAudio.paused) { bgAudio.currentTime = 0; bgAudio.play(); } }
+    function startMusic() { if(bgAudio.paused && isActive) { bgAudio.currentTime = 0; bgAudio.play(); } }
+
     window.addEventListener('keydown', (e) => { if(e.code === 'Space') { startMusic(); startJump(); } });
     view.addEventListener('touchstart', (e) => { e.preventDefault(); startMusic(); startJump(); });
+
+    btnRestart.addEventListener('click', () => {
+        location.reload(); 
+    });
 
     function startJump() {
         if (!isJumping && isActive) {
@@ -157,10 +162,16 @@
 
     function createItem() {
         if (!isActive) return;
-        const items = [{i:'🌵',t:'t'}, {i:'🪙',t:'p'}, {i:'🍎',t:'l'}];
-        let obj = items[Math.floor(Math.random() * items.length)];
+        
+        // Ratio Logic: 70% Coin, 25% Cactus, 5% Life Apple
+        const rand = Math.random();
+        let objType;
+        if (rand < 0.70) objType = {i:'🪙',t:'p'};
+        else if (rand < 0.95) objType = {i:'🌵',t:'t'};
+        else objType = {i:'🍎',t:'l'};
+
         const el = document.createElement('div');
-        el.className = 'obj'; el.innerHTML = obj.i;
+        el.className = 'obj'; el.innerHTML = objType.i;
         el.style.bottom = (Math.floor(Math.random() * 170) + 55) + 'px';
         el.style.right = '-60px';
         view.appendChild(el);
@@ -171,30 +182,27 @@
             let b = bashar.getBoundingClientRect(), i = el.getBoundingClientRect();
             
             if (b.left < i.right && b.right > i.left && b.top < i.bottom && b.bottom > i.top) {
-                if (obj.t === 't') {
+                if (objType.t === 't') {
                     life--; 
-                    heartEl.innerText = "❤️".repeat(life);
-                    
+                    heartEl.innerText = "❤️".repeat(life) || "🖤";
                     if (life > 0) {
-                        // Custom Crash Sound "kache-esho-na" for 1st and 2nd life loss
-                        crashAudio.currentTime = 0;
-                        crashAudio.play();
+                        crashAudio.currentTime = 0; crashAudio.play();
                     } else {
-                        // Last life - handle game over with kiss sound
                         handleGameOver();
                     }
-                } else if (obj.t === 'p') {
-                    score += 50; scoreEl.innerText = score; speed += 0.15;
-                    playDefaultSound(800, 'sine', 0.1); // Coin sound
-                } else if (obj.t === 'l' && life < 3) {
+                } else if (objType.t === 'p') {
+                    score += 100;
+                    scoreEl.innerText = score; speed += 0.15;
+                    playDefaultSound(800, 'sine', 0.1); 
+                } else if (objType.t === 'l' && life < 3) {
                     life++; heartEl.innerText = "❤️".repeat(life);
-                    playDefaultSound(1200, 'sine', 0.2); // Life sound
+                    playDefaultSound(1200, 'sine', 0.2); 
                 }
                 el.remove(); clearInterval(loop);
             }
             if (pos > window.innerWidth) { el.remove(); clearInterval(loop); }
         }, 20);
-        setTimeout(createItem, 1800 + Math.random() * 1500);
+        setTimeout(createItem, 1400 + Math.random() * 1200);
     }
 
     function handleGameOver() {
@@ -202,13 +210,14 @@
         bgAudio.pause();
         kissAudio.currentTime = 0;
         kissAudio.play();
-        zannat.style.left = "120px"; 
+        zannat.style.left = "130px"; 
+        bashar.style.left = "130px";
 
         setInterval(() => {
             let kiss = document.createElement('div');
             kiss.className = 'kiss-rain'; kiss.innerHTML = '😘';
-            kiss.style.left = (120 + Math.random()*50) + 'px';
-            kiss.style.bottom = (60 + Math.random()*60) + 'px';
+            kiss.style.left = (130 + Math.random()*40) + 'px';
+            kiss.style.bottom = (70 + Math.random()*50) + 'px';
             view.appendChild(kiss);
             setTimeout(() => kiss.remove(), 1200);
         }, 150);
@@ -216,7 +225,7 @@
         setTimeout(() => {
             document.getElementById('final-score').innerText = score;
             overlay.style.display = 'flex';
-        }, 1200);
+        }, 1500);
     }
     setTimeout(createItem, 1000);
 </script>
